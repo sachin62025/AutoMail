@@ -1,0 +1,4 @@
+streamlit
+yagmail
+pandas
+python-dotenv
