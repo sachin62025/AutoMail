@@ -2,9 +2,6 @@
 
 A user-friendly web application built with Python and Streamlit to send bulk emails efficiently and professionally. This tool is ideal for sending newsletters, announcements, or personalized messages to a list of recipients without needing complex software.
 
-![Application Screenshot](docs/screenshot.png)
-*(Note: You should create a `docs` folder and add a screenshot of your running application named `screenshot.png`)*
-
 ---
 
 ## Key Features
@@ -23,7 +20,7 @@ A user-friendly web application built with Python and Streamlit to send bulk ema
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 automatic-email-sender/
@@ -32,16 +29,16 @@ automatic-email-sender/
 ├── requirements.txt
 ├── README.md
 └── src/
-    ├── app.py              # Main Streamlit UI file
+    ├── app.py     
     ├── core/
-    │   └── email_sender.py # Core logic for sending emails
+    │   └── email_sender.py 
     └── utils/
-        └── recipient_parser.py # Helper functions for parsing recipients
+        └── recipient_parser.py 
 ```
 
 ---
 
-## ⚙️ Setup and Installation
+## Setup and Installation
 
 Follow these steps to get the application running on your local machine.
 
@@ -61,11 +58,6 @@ cd automatic-email-sender
 
 It's highly recommended to use a virtual environment to manage project dependencies.
 
-- **On macOS / Linux:**
-  ```bash
-  python3 -m venv venv
-  source venv/bin/activate
-  ```
 - **On Windows:**
   ```bash
   python -m venv venv
@@ -93,14 +85,12 @@ The application uses a `.env` file to handle sensitive credentials securely.
    ```
 3. Replace the placeholder values with your sender's Gmail address and the **16-character App Password**.
 
-   > **💡 Important:** You **cannot** use your regular Gmail password if you have 2-Factor Authentication (2FA) enabled. See the section below on how to generate an App Password.
+   > **Important:** You **cannot** use your regular Gmail password if you have 2-Factor Authentication (2FA) enabled. See the section below on how to generate an App Password.
    >
 
 ---
 
-## ▶️ How to Run the Application
-
-Once the setup is complete, you can run the Streamlit application with a single command:
+## How to Run the Application
 
 ```bash
 streamlit run src/app.py
@@ -110,7 +100,7 @@ Your web browser will automatically open a new tab with the application running.
 
 ---
 
-## 🔐 How to Generate a Gmail App Password
+## How to Generate a Gmail App Password
 
 To send emails programmatically from a Gmail account with 2FA enabled, you must use an App Password.
 
@@ -123,13 +113,3 @@ To send emails programmatically from a Gmail account with 2FA enabled, you must 
 7. Under "Select device," choose **Other (Custom name)** and give it a descriptive name like "Streamlit Bulk Sender".
 8. Click **Generate**.
 9. A 16-character password will be displayed in a yellow box. **Copy this password.** This is what you will paste into your `.env` file for the `SENDER_PASSWORD` variable.
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
-
-## 📄 License
-
-This project is licensed under the MIT License.
