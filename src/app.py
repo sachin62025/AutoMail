@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from core.email_sender import EmailSender
 from utils.recipient_parser import parse_from_text, parse_from_csv
+from streamlit_quill import st_quill
 load_dotenv()
 
 st.set_page_config(page_title="Bulk Email Sender", layout="centered")
@@ -46,7 +47,20 @@ if recipients:
 # --- UI for Email Content ---
 st.header("Compose Your Email")
 email_subject = st.text_input("Subject")
-email_body = st.text_area("Email Body (HTML is supported)", height=300)
+# email_body = st.text_area("Email Body (HTML is supported)", height=300)
+st.write("Email Body")
+email_body = st_quill(
+    placeholder="Compose your email here...",
+    html=True,  
+    toolbar=[
+        ['bold', 'italic', 'underline', 'strike'],
+        [{'header': '1'}, {'header': '2'}],
+        [{'list': 'ordered'}, {'list': 'bullet'}],
+        ['link', 'image'],
+        ['clean']
+    ],
+    key="quill_editor"
+)
 attachment = st.file_uploader("Attach a file (Optional)")
 
 # --- UI for Sending Email ---
