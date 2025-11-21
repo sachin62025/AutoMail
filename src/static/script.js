@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let recipients = [];
     let attachmentFile = null;
+    let resumeFile = null;
 
     // Tabs
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -37,16 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = document.getElementById('manual-recipients').value;
         if (!text) return showToast('Please enter email addresses', 'error');
 
-        // Simple regex for parsing
         const emails = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi);
 
         if (emails) {
-            // Add unique emails
-            const newEmails = emails.filter(e => !recipients.includes(e));
-            recipients = [...recipients, ...newEmails];
-            updateRecipientCount();
-            showToast(`Added ${newEmails.length} recipients`, 'success');
+            addRecipients(emails);
             document.getElementById('manual-recipients').value = '';
+            showToast(`Added ${emails.length} recipients`, 'success');
         } else {
             showToast('No valid emails found', 'error');
         }
@@ -99,19 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Failed to parse CSV');
 
             const data = await response.json();
+            addRecipients(data.recipients);
 
-            // Merge recipients
-            const newEmails = data.recipients.filter(e => !recipients.includes(e));
-            recipients = [...recipients, ...newEmails];
-
-            updateRecipientCount();
-
-            // Show file info
             document.getElementById('filename').textContent = file.name;
             document.getElementById('file-info').classList.remove('hidden');
             document.getElementById('drop-zone').classList.add('hidden');
 
-            showToast(`Imported ${newEmails.length} recipients from CSV`, 'success');
+            showToast(`Imported ${data.recipients.length} recipients from CSV`, 'success');
         } catch (error) {
             showToast(error.message, 'error');
         } finally {
@@ -123,29 +114,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('file-info').classList.add('hidden');
         document.getElementById('drop-zone').classList.remove('hidden');
         fileInput.value = '';
-        // Note: We don't remove the recipients added from CSV, just the file UI
     });
 
     // Recipient Management
-    function updateRecipientCount() {
-        const count = document.getElementById('recipient-count');
-        const clearBtn = document.getElementById('clear-recipients-btn');
-
-        count.textContent = `${recipients.length} recipients`;
-
-        if (recipients.length > 0) {
-            clearBtn.classList.remove('hidden');
-        } else {
-            clearBtn.classList.add('hidden');
-        }
-
+    function addRecipients(newEmails) {
+        // Filter duplicates
+        const uniqueNew = newEmails.filter(e => !recipients.includes(e));
+        recipients = [...recipients, ...uniqueNew];
         renderRecipients();
     }
 
     function renderRecipients() {
         const list = document.getElementById('recipient-list');
-        list.innerHTML = '';
+        const count = document.getElementById('recipient-count');
+        const clearBtn = document.getElementById('clear-recipients-btn');
 
+        list.innerHTML = '';
         recipients.forEach(email => {
             const chip = document.createElement('div');
             chip.className = 'recipient-chip';
@@ -155,29 +139,49 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             list.appendChild(chip);
         });
+
+        count.textContent = `${recipients.length} recipients`;
+
+        if (recipients.length > 0) {
+            clearBtn.classList.remove('hidden');
+        } else {
+            clearBtn.classList.add('hidden');
+        }
     }
 
     window.removeRecipient = (email) => {
         recipients = recipients.filter(e => e !== email);
-        updateRecipientCount();
+        renderRecipients();
     };
 
     document.getElementById('clear-recipients-btn').addEventListener('click', () => {
         recipients = [];
-        updateRecipientCount();
+        renderRecipients();
     });
 
     // AI Generation
+    document.getElementById('resume-upload').addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            resumeFile = e.target.files[0];
+            document.getElementById('resume-name').textContent = resumeFile.name;
+        }
+    });
+
     document.getElementById('generate-btn').addEventListener('click', async () => {
         const prompt = document.getElementById('ai-prompt').value;
         if (!prompt) return showToast('Please enter a prompt for the AI', 'error');
 
         showLoading(true, 'Generating email content...');
         try {
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            if (resumeFile) {
+                formData.append('resume', resumeFile);
+            }
+
             const response = await fetch('/api/generate-email', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
+                body: formData
             });
 
             if (!response.ok) {
@@ -230,7 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('attachment', attachmentFile);
         }
 
-        showLoading(true, sendingMode === 'batch' ? 'Sending batch email...' : 'Starting email queue...');
+        // Show Progress Modal
+        showProgressModal(true);
 
         try {
             const response = await fetch('/api/send-email', {
@@ -244,14 +249,67 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const data = await response.json();
-            showToast(data.message, 'success');
+            const taskId = data.task_id;
 
-            // Clear sensitive data? Maybe not for UX
+            // Start polling
+            pollProgress(taskId);
+
         } catch (error) {
             showToast(error.message, 'error');
-        } finally {
-            showLoading(false);
+            showProgressModal(false);
         }
+    });
+
+    function pollProgress(taskId) {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/task-status/${taskId}`);
+                if (!res.ok) return;
+
+                const status = await res.json();
+                updateProgressUI(status);
+
+                if (status.status === 'completed' || status.status === 'failed') {
+                    clearInterval(interval);
+                    document.getElementById('close-progress-btn').classList.remove('hidden');
+                    if (status.status === 'completed') {
+                        showToast('All emails sent!', 'success');
+                    } else {
+                        showToast('Sending failed: ' + status.message, 'error');
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }, 1000);
+    }
+
+    function updateProgressUI(status) {
+        const bar = document.getElementById('progress-bar');
+        const text = document.getElementById('progress-text');
+        const details = document.getElementById('progress-details');
+
+        const percent = status.total > 0 ? (status.sent / status.total) * 100 : 0;
+        bar.style.width = `${percent}%`;
+        text.textContent = status.message;
+        details.textContent = `${status.sent}/${status.total}`;
+    }
+
+    function showProgressModal(show) {
+        const modal = document.getElementById('progress-modal');
+        const closeBtn = document.getElementById('close-progress-btn');
+
+        if (show) {
+            modal.classList.remove('hidden');
+            closeBtn.classList.add('hidden');
+            updateProgressUI({ sent: 0, total: 0, message: 'Initializing...' });
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+
+    document.getElementById('close-progress-btn').addEventListener('click', () => {
+        showProgressModal(false);
     });
 
     // UI Helpers
