@@ -3,3 +3,4 @@ yagmail
 pandas
 python-dotenv
 streamlit-quill
+google-generativeai
