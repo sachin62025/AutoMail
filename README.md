@@ -29,7 +29,7 @@ automatic-email-sender/
 ├── requirements.txt
 ├── README.md
 └── src/
-    ├── app.py     
+    ├── app.py   
     ├── core/
     │   └── email_sender.py 
     └── utils/
@@ -50,8 +50,8 @@ Follow these steps to get the application running on your local machine.
 ### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/automatic-email-sender.git
-cd automatic-email-sender
+git clone https://github.com/sachin62025/AutoMail.git
+cd AutoMail
 ```
 
 ### 3. Create a Virtual Environment
@@ -93,7 +93,7 @@ The application uses a `.env` file to handle sensitive credentials securely.
 ## How to Run the Application
 
 ```bash
-streamlit run src/app.py
+uvicorn src.main:app --reload
 ```
 
 Your web browser will automatically open a new tab with the application running.
