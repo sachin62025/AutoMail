@@ -20,9 +20,6 @@ app = FastAPI(title="Auto-Mail API")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="src/static"), name="static")
-
-# In-memory store for task progress
-# Format: {task_id: {"status": "running"|"completed"|"failed", "sent": 0, "total": 0, "message": ""}}
 task_progress: Dict[str, Dict] = {}
 
 # Models
@@ -169,12 +166,7 @@ def process_individual_emails(task_id, sender, recipients, subject, body, attach
             # Update progress
             task_progress[task_id]["sent"] = i
             task_progress[task_id]["message"] = f"Sending to {recipient}..."
-            
-            # We need to modify send_individual_emails to NOT loop internally if we want granular control here,
-            # OR we pass a callback. The existing class has a callback! Perfect.
-            # But wait, the existing class loops. 
-            # Let's use the existing class's callback to update our store.
-            pass # Logic moved below
+            pass 
         
         def progress_callback(index, total, current_recipient):
             task_progress[task_id]["sent"] = index + 1
