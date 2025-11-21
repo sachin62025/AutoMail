@@ -184,5 +184,15 @@ def process_individual_emails(task_id, sender, recipients, subject, body, attach
         if attachment_path and os.path.exists(attachment_path):
             os.remove(attachment_path)
 
+# if __name__ == "__main__":
+#     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=False)
+
+
 if __name__ == "__main__":
-    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))  
+    uvicorn.run(
+        "src.main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False
+    )
